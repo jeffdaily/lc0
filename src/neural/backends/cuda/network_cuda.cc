@@ -623,6 +623,11 @@ class CudaNetwork : public Network {
       network_.emplace_back(std::move(FCMov2));
     }
 
+    // Weight uploads convert through the shared scratch buffer on the legacy
+    // null stream, which is not ordered against the non-blocking streams used
+    // below. Wait for them before the first evaluation reuses the scratch.
+    ReportCUDAErrors(cudaStreamSynchronize(0));
+
     // 3. Allocate GPU memory for running the network:
     //    - three buffers of max size are enough (one to hold input, second to
     //      hold output and third to hold skip connection's input).
